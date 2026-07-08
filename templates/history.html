@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction History</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body class="font-poppins bg-gradient-to-br from-green-200 via-teal-300 to-blue-400 min-h-screen p-4">
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-green-900">Prediction History</h1>
+        <a href="/" class="text-green-600 hover:underline mt-2 inline-block">Back to Home</a>
+    </header>
+    <main class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        {% if history %}
+        <ul class="space-y-4">
+            {% for item in history %}
+            <li class="border-b pb-2 flex items-start gap-4">
+                {% if item[3] %}
+                <img src="{{ item[3] }}" class="w-16 h-16 object-cover rounded shadow-md" alt="Prediction Image">
+                {% else %}
+                <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                    <p class="text-gray-500 text-sm">No Image</p>
+                </div>
+                {% endif %}
+                <div>
+                    <p><strong>Disease:</strong> {{ item[0] }}</p>
+                    <p><strong>Confidence:</strong> {{ item[1]|round(2) }}%</p>
+                    <p><strong>Time:</strong> {{ item[2] }}</p>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-gray-600">No predictions yet.</p>
+        {% endif %}
+    </main>
+    <footer class="mt-10 text-gray-600 text-center">
+        <p>© 2025 Tea Leaf Disease Detection. Empowering Smarter Farming.🌱</p>
+    </footer>
+</body>
+</html>

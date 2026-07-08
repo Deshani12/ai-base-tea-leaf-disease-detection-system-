@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tea Leaf Disease Detection</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Anime.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .glassmorphism {
+            background: rgba(31, 41, 55, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .flip-container {
+            perspective: 1000px;
+        }
+        .flip-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-container.flipped .flip-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-front, .flip-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+        }
+        .flip-back {
+            transform: rotateY(180deg);
+        }
+        @keyframes progress {
+            from { width: 0; }
+            to { width: var(--progress-width); }
+        }
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .accordion-content.open {
+            max-height: 500px; /* Adjust based on content */
+        }
+        /* Background Image Styling */
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/static/image/IMG_20230822_214853_654.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        .dark body {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/static/image/IMG_20230822_214853_654.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+    </style>
+</head>
+<body class="font-poppins min-h-screen flex flex-col items-center justify-center p-4 transition-all duration-300">
+    <!-- Loading Spinner -->
+    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="w-16 h-16 border-4 border-t-green-600 border-gray-300 rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Theme Toggle Button -->
+    <button id="theme-toggle" class="fixed top-4 right-4 p-2 bg-white dark:bg-gray-800 rounded-full shadow-md hover:scale-110 transition-transform duration-200">
+        <i class="fas fa-moon text-gray-600 dark:text-yellow-400"></i>
+    </button>
+
+    <!-- Header -->
+    <header class="text-center mb-10" id="header">
+        <h1 class="text-4xl md:text-6xl font-bold text-green-900 dark:text-green-300 drop-shadow-lg">
+            Tea Leaf Disease Detection
+        </h1>
+        <p class="text-lg text-gray-700 dark:text-gray-300 mt-2 animate-pulse">
+            Diagnose tea leaf diseases with AI-powered precision
+        </p>
+        <a href="/history" class="text-green-600 dark:text-green-400 hover:underline mt-2 inline-block">View Prediction History</a>
+    </header>
+
+    <!-- Main Container -->
+    <main class="glassmorphism rounded-2xl shadow-2xl max-w-md w-full p-6 md:p-8 transform hover:scale-105 transition-transform duration-300">
+        <!-- Upload Form -->
+        <form id="upload-form" action="/predict" method="POST" enctype="multipart/form-data" class="space-y-6">
+            <!-- File Input -->
+            <div id="drop-zone" class="border-2 border-dashed border-green-400 dark:border-green-600 rounded-lg p-6 text-center cursor-pointer transition-all duration-300 hover:bg-green-50 dark:hover:bg-gray-700">
+                <input type="file" id="file-upload" name="file" accept="image/png,image/jpeg" capture="environment" class="hidden" onchange="previewImage(event)">
+                <label for="file-upload" class="block">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-green-600 dark:text-green-400 mb-2"></i>
+                    <p id="upload-text" class="text-gray-800 dark:text-gray-200 font-medium">
+                        Drag & drop a PNG or JPEG image or click to browse
+                    </p>
+                    <p id="mobile-upload-text" class="text-gray-800 dark:text-gray-200 font-medium hidden">
+                        Tap to take a photo or select a PNG/JPEG image
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Only PNG and JPEG images supported (Max 5MB)
+                    </p>
+                </label>
+            </div>
+            <!-- Image Feedback -->
+            <p id="image-feedback" class="text-sm text-red-500 dark:text-red-400 hidden"></p>
+            <!-- Image Preview -->
+            <div id="image-preview" class="flip-container hidden">
+                <div class="flip-inner">
+                    <div class="flip-front">
+                        <div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+                            <p class="text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <img id="preview" class="w-full h-48 object-cover rounded-lg shadow-md" alt="Image Preview">
+                    </div>
+                </div>
+            </div>
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-green-600 dark:bg-green-700 text-white font-semibold py-3 rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition duration-300 flex items-center justify-center gap-2 transform hover:scale-105">
+                <i class="fas fa-leaf"></i>
+                Diagnose Now
+            </button>
+        </form>
+
+        <!-- Result Section -->
+        {% if prediction %}
+        <div id="result" class="mt-6 bg-white dark:bg-gray-800 border-l-4 border-green-500 rounded-lg p-4">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                <h2 class="text-lg font-semibold text-green-800 dark:text-green-300">Diagnosis Result</h2>
+            </div>
+            <!-- Display Uploaded Image -->
+            {% if image_path %}
+            <img src="{{ image_path }}" class="w-full h-48 object-cover rounded-lg shadow-md mb-4" alt="Uploaded Image">
+            {% endif %}
+            <p class="text-gray-700 dark:text-gray-200"><span class="font-medium">Disease:</span> {{ prediction }}</p>
+            <p class="text-gray-700 dark:text-gray-200"><span class="font-medium">Confidence:</span> {{ probability|round(2) }}%</p>
+            <p class="text-gray-700 dark:text-gray-200"><span class="font-medium">Description:</span> {{ description }}</p>
+            <!-- Recommendation -->
+            <div class="mt-4">
+                <h3 class="text-md font-semibold text-green-700 dark:text-green-300 flex items-center gap-2">
+                    <i class="fas fa-seedling"></i> Recommended Solution
+                </h3>
+                <p class="text-gray-700 dark:text-gray-200 mt-1">{{ recommendation }}</p>
+                <!-- Accordion for Details -->
+                {% if details %}
+                <div class="mt-2">
+                    <button class="accordion-toggle w-full text-left bg-green-100 dark:bg-gray-700 text-green-800 dark:text-green-300 font-medium py-2 px-4 rounded-lg flex items-center justify-between hover:bg-green-200 dark:hover:bg-gray-600 transition duration-200">
+                        <span>View Detailed Steps</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4 bg-green-50 dark:bg-gray-900 rounded-b-lg">
+                            <p class="text-gray-700 dark:text-gray-200"><span class="font-medium">Treatment:</span> {{ details.treatment }}</p>
+                            <p class="text-gray-700 dark:text-gray-200 mt-2"><span class="font-medium">Prevention:</span> {{ details.prevention }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-4">
+                <div id="progress-bar" class="bg-green-600 h-2.5 rounded-full" style="--progress-width: {{ probability }}%;"></div>
+            </div>
+            <!-- Confidence Chart -->
+            <canvas id="confidence-chart" class="mt-4"></canvas>
+        </div>
+        <script>
+            const ctx = document.getElementById('confidence-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ probability_labels|tojson }},
+                    datasets: [{
+                        label: 'Confidence (%)',
+                        data: {{ probability_values|tojson }},
+                        backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        </script>
+        {% endif %}
+        {% if error %}
+        <div class="mt-6 bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
+            <p class="text-red-700">{{ error }}</p>
+        </div>
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-10 text-gray-600 dark:text-gray-400 text-center">
+        <p>© 2025 Tea Leaf Disease Detection. Empowering Smarter Farming.🌱</p>
+    </footer>
+
+    <!-- JavaScript for Animations, Drag-and-Drop, Preview, Theme Toggle, Mobile Detection, and Accordion -->
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            themeToggle.querySelector('i').classList.toggle('fa-moon');
+            themeToggle.querySelector('i').classList.toggle('fa-sun');
+        });
+
+        // Detect Mobile Device
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const uploadText = document.getElementById('upload-text');
+        const mobileUploadText = document.getElementById('mobile-upload-text');
+        if (isMobile) {
+            uploadText.classList.add('hidden');
+            mobileUploadText.classList.remove('hidden');
+        }
+
+        // Drag-and-Drop
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-upload');
+        const previewContainer = document.getElementById('image-preview');
+        const previewImage = document.getElementById('preview');
+        const flipContainer = previewContainer.querySelector('.flip-container');
+        const feedback = document.getElementById('image-feedback');
+        const form = document.getElementById('upload-form');
+        const loading = document.getElementById('loading');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('scale-105', 'bg-green-100', 'dark:bg-gray-600');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('scale-105', 'bg-green-100', 'dark:bg-gray-600');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('scale-105', 'bg-green-100', 'dark:bg-gray-600');
+            const files = e.dataTransfer.files;
+            if (files.length && (files[0].type === 'image/png' || files[0].type === 'image/jpeg')) {
+                fileInput.files = files;
+                previewImageFunc(files[0]);
+            } else {
+                feedback.textContent = 'Please upload a PNG or JPEG image.';
+                feedback.classList.remove('hidden');
+            }
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Image Preview with Validation
+        function previewImage(event) {
+            const file = event.target.files[0];
+            feedback.classList.add('hidden');
+            if (file) {
+                if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
+                    feedback.textContent = 'Please upload a PNG or JPEG image.';
+                    feedback.classList.remove('hidden');
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    feedback.textContent = 'Image size must be less than 5MB.';
+                    feedback.classList.remove('hidden');
+                    return;
+                }
+                previewImageFunc(file);
+            }
+        }
+
+        function previewImageFunc(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                previewImage.src = reader.result;
+                previewContainer.classList.remove('hidden');
+                flipContainer.classList.add('flipped');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Show Loading Spinner
+        form.addEventListener('submit', () => {
+            loading.classList.remove('hidden');
+        });
+
+        // Hide Loading Spinner
+        loading.classList.add('hidden');
+
+        // Accordion Toggle
+        const accordionToggle = document.querySelector('.accordion-toggle');
+        if (accordionToggle) {
+            accordionToggle.addEventListener('click', () => {
+                const content = accordionToggle.nextElementSibling;
+                content.classList.toggle('open');
+                const icon = accordionToggle.querySelector('i');
+                icon.classList.toggle('fa-chevron-down');
+                icon.classList.toggle('fa-chevron-up');
+            });
+        }
+
+        // Anime.js Animations
+        anime({
+            targets: '#header h1',
+            translateY: [-50, 0],
+            opacity: [0, 1],
+            easing: 'easeOutExpo',
+            duration: 1000
+        });
+        anime({
+            targets: '#header p',
+            translateY: [-30, 0],
+            opacity: [0, 1],
+            easing: 'easeOutExpo',
+            duration: 1000,
+            delay: 200
+        });
+        if (document.getElementById('result')) {
+            anime({
+                targets: '#result',
+                translateX: [100, 0],
+                opacity: [0, 1],
+                easing: 'easeOutExpo',
+                duration: 800
+            });
+            anime({
+                targets: '#progress-bar',
+                width: '{{ probability }}%',
+                easing: 'easeOutExpo',
+                duration: 1000,
+                delay: 200
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+Brown_Blight
+Gray_Blight
+Green_Mirid_Bug
+Healthy_Leaf
+Helopeltis
+Red_Spider
+Tea_algal_leaf_spot

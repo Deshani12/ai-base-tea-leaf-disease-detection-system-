@@ -1,0 +1,22 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Flask uploads
+static/uploads/*
+
+# Tensorflow files
+*.h5
+
+# Database
+*.db
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
